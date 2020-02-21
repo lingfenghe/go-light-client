@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"strconv"
 )
 
 func consumeCreateWeIdEncodeRestApi(restServerIp string, restServerPort string, publicKeyBigInt *big.Int, nonce string, funcName string) (string, error) {
@@ -70,12 +71,12 @@ func consumeRegisterCptRestApi(restServerIp string, restServerPort string, nonce
 	return response, err
 }
 
-func consumeCreateCredentialEncodeRestApi(restServerIp string, restServerPort string, funcName string, claim string, cptId string, issuer string, expirationDate string) (string, error) {
+func consumeCreateCredentialEncodeRestApi(restServerIp string, restServerPort string, funcName string, claim string, cptId uint, issuer string, expirationDate string) (string, error) {
 	url := getUrl(restServerIp, restServerPort, "encode")
 
 	json := bytes.Buffer{}
 	json.WriteString(`{"functionArg":{"cptId":`)
-	json.WriteString(cptId)
+	json.WriteString(strconv.Itoa(int(cptId)))
 	json.WriteString(`, "issuer": "`)
 	json.WriteString(issuer)
 	json.WriteString(`","expirationDate": "`)
@@ -124,12 +125,12 @@ func consumeQueryAuthorityIssuerInvokeRestApi(restServerIp string, restServerPor
 	return response, err
 }
 
-func consumeQueryCptInvokeRestApi(restServerIp string, restServerPort string, funcName string, cptId string) (string, error) {
+func consumeQueryCptInvokeRestApi(restServerIp string, restServerPort string, funcName string, cptId uint) (string, error) {
 	url := getUrl(restServerIp, restServerPort, "invoke")
 
 	json := bytes.Buffer{}
 	json.WriteString(`{"functionArg": {"cptId": "`)
-	json.WriteString(cptId)
+	json.WriteString(strconv.Itoa(int(cptId)))
 	json.WriteString(`"}, "transactionArg": {}, "functionName": "`)
 	json.WriteString(funcName)
 	json.WriteString(`","v": "1.0.0"}`)

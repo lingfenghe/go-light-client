@@ -7,27 +7,28 @@ import (
 	"math/big"
 )
 
-func CreateWeId(restServerIp string, restServerPort string) error {
+func CreateWeId(restServerIp string, restServerPort string) (*big.Int, *big.Int, string, error) {
 	funcName := "createWeId"
 	nonce := GenerateNonce()
-	_, privateKeyBytes, publicKeyBigInt, _ := GenerateKeyPair()
+	publicKeyBytes, privateKeyBytes, publicKeyBigInt, privateKeyBigInt := GenerateKeyPair()
+	weid := PublicKeyToWeId(publicKeyBytes)
 	encodeResponseStr, err1 := consumeCreateWeIdEncodeRestApi(restServerIp, restServerPort, publicKeyBigInt, nonce, funcName)
 	if err1 != nil {
-		return err1
+		return nil, nil, "", err1
 	}
 	transactResponseStr, err2 := processEncodeResponse(encodeResponseStr, restServerIp, restServerPort, funcName, nonce, privateKeyBytes)
 	if err2 != nil {
-		return err2
+		return nil, nil, "", err2
 	}
 	transactResponse, err3 := convertJsonToTransactResponseStruct(transactResponseStr)
 	if err3 != nil {
-		return err3
+		return nil, nil, "", err3
 	}
 	if transactResponse.ErrorCode != 0 {
-		return errors.New(transactResponse.ErrorMessage)
+		return nil, nil, "", errors.New(transactResponse.ErrorMessage)
 	}
 	fmt.Println("create weid transact response =", transactResponseStr)
-	return nil
+	return publicKeyBigInt, privateKeyBigInt, weid, nil
 }
 
 func RegisterAuthorityIssuer(restServerIp string, restServerPort string, weid string, issuerName string, privateKeyBigInt *big.Int) error {
@@ -78,7 +79,7 @@ func RegisterCpt(restServerIp string, restServerPort string, weid string, cptJso
 	return cptId, cptVersion, nil
 }
 
-func CreateCredentialPojo(restServerIp string, restServerPort string, claim string, issuer string, expirationDate string, cptId string, privateKeyBigInt *big.Int) (CredentialEncodeResponse, string, error) {
+func CreateCredentialPojo(restServerIp string, restServerPort string, claim string, issuer string, expirationDate string, cptId uint, privateKeyBigInt *big.Int) (CredentialEncodeResponse, string, error) {
 	funcName := "createCredentialPojo"
 	encodeResponseStr, err1 := consumeCreateCredentialEncodeRestApi("39.106.69.186", "6001", funcName, claim, cptId, issuer, expirationDate)
 	if err1 != nil {
@@ -112,9 +113,9 @@ func CreateCredentialPojo(restServerIp string, restServerPort string, claim stri
 	fmt.Println("signatureBase64String =", signatureBase64String)
 	credentialEncodeResponse.RespBody.Proof.SignatureValue = signatureBase64String
 
-    credentialJsonStr, err5 := convertCredentialEncodeResponseToJson(credentialEncodeResponse.RespBody)
-    if err5 != nil {
-    	return CredentialEncodeResponse{}, "", err5
+	credentialJsonStr, err5 := convertCredentialEncodeResponseToJson(credentialEncodeResponse.RespBody)
+	if err5 != nil {
+		return CredentialEncodeResponse{}, "", err5
 	}
 
 	return credentialEncodeResponse, credentialJsonStr, nil
@@ -158,7 +159,7 @@ func QueryAuthorityIssuer(restServerIp string, restServerPort string, weid strin
 	return authorityIssuerInvokeResponse, nil
 }
 
-func QueryCpt(restServerIp string, restServerPort string, cptId string) (CptInvokeResponse, error) {
+func QueryCpt(restServerIp string, restServerPort string, cptId uint) (CptInvokeResponse, error) {
 	funcName := "queryCpt"
 	invokeResponseStr, err1 := consumeQueryCptInvokeRestApi(restServerIp, restServerPort, funcName, cptId)
 	if err1 != nil {
@@ -191,7 +192,7 @@ func VerifyCredentialPojo(restServerIp string, restServerPort string, credential
 	}
 
 	if verifyCredentialInvokeResponse.ErrorCode != 0 {
-		return VerifyCredentialInvokeResponse{},  errors.New(verifyCredentialInvokeResponse.ErrorMessage)
+		return VerifyCredentialInvokeResponse{}, errors.New(verifyCredentialInvokeResponse.ErrorMessage)
 	}
 
 	return verifyCredentialInvokeResponse, nil

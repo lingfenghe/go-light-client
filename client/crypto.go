@@ -4,6 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"golang.org/x/crypto/sha3"
 	"math/big"
@@ -45,4 +47,10 @@ func Hash(msg []byte) []byte {
 	h := sha3.NewLegacyKeccak256()
 	h.Write(msg)
 	return h.Sum(nil)
+}
+
+func PublicKeyToWeId(publicKeyBytes []byte) string {
+	address := common.BytesToAddress(crypto.Keccak256(publicKeyBytes[1:])[12:])
+	weid := "did:weid:" + address.String()
+	return weid
 }
